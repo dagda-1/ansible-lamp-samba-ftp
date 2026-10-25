@@ -1,0 +1,47 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Instalar Apache, PHP y phpMyAdmin
+  community.general.zypper:
+    name:
+      - apache2
+      - apache2-mod_php8
+      - php8
+      - php8-mysql
+      - php8-mbstring
+      - phpMyAdmin
+    state: present
+
+- name: Habilitar y arrancar Apache
+  ansible.builtin.service:
+    name: apache2
+    state: started
+    enabled: true
+
+- name: Abrir HTTP en el firewall
+  ansible.posix.firewalld:
+    service: http
+    permanent: true
+    immediate: true
+    state: enabled
+- name: Crear página index.html de prueba
+  ansible.builtin.copy:
+    dest: /srv/www/htdocs/index.html
+    content: "<h1>Servidor LAMP funcionando</h1>\n"
+    mode: "0644"
+
+- name: Eliminar info.php de prueba
+  ansible.builtin.file:
+    path: /srv/www/htdocs/info.php
+    state: absent
+- name: Publicar phpMyAdmin en Apache
+  ansible.builtin.copy:
+    dest: /etc/apache2/conf.d/phpmyadmin.conf
+    content: |
+      Alias /phpMyAdmin /usr/share/phpMyAdmin
+      <Directory /usr/share/phpMyAdmin>
+        Options FollowSymLinks
+        DirectoryIndex index.php
+        Require all granted
+      </Directory>
+    mode: "0644"
+  notify: Reiniciar Apache

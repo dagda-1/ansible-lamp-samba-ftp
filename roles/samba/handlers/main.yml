@@ -1,0 +1,9 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Reiniciar Samba
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - smb
+    - nmb

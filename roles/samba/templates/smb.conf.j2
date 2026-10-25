@@ -1,0 +1,13 @@
+[global]
+   workgroup = WORKGROUP
+   server string = Servidor Samba
+   security = user
+   map to guest = never
+
+[compartido]
+   path = {{ samba_share_path }}
+   valid users = {{ samba_user }}
+   read only = no
+   browseable = yes
+   create mask = 0664
+   directory mask = 0775

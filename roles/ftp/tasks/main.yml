@@ -1,0 +1,32 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Instalar vsftpd
+  community.general.zypper:
+    name: vsftpd
+    state: present
+
+- name: Configurar vsftpd
+  ansible.builtin.template:
+    src: vsftpd.conf.j2
+    dest: /etc/vsftpd.conf
+    mode: "0600"
+  notify: Reiniciar vsftpd
+
+- name: Arrancar y habilitar vsftpd
+  ansible.builtin.service:
+    name: vsftpd
+    state: started
+    enabled: true
+
+- name: Abrir FTP en el firewall
+  ansible.posix.firewalld:
+    service: ftp
+    permanent: true
+    immediate: true
+    state: enabled
+- name: Abrir puertos pasivos de FTP
+  ansible.posix.firewalld:
+    port: 30000-30100/tcp
+    permanent: true
+    immediate: true
+    state: enabled

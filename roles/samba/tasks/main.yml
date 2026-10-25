@@ -1,0 +1,55 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Instalar Samba
+  community.general.zypper:
+    name: samba
+    state: present
+
+- name: Crear usuario de sistema (sin login)
+  ansible.builtin.user:
+    name: "{{ samba_user }}"
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Crear directorio compartido
+  ansible.builtin.file:
+    path: "{{ samba_share_path }}"
+    state: directory
+    owner: "{{ samba_user }}"
+    group: users
+    mode: "0775"
+
+- name: Listar usuarios Samba existentes
+  ansible.builtin.command: pdbedit -L
+  register: samba_users
+  changed_when: false
+
+- name: Crear usuario Samba
+  ansible.builtin.shell: |
+    printf '%s\n%s\n' '{{ samba_password }}' '{{ samba_password }}' | smbpasswd -s -a {{ samba_user }}
+  when: samba_user not in samba_users.stdout
+  no_log: true
+
+- name: Configurar smb.conf
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    mode: "0644"
+  notify: Reiniciar Samba
+
+- name: Arrancar y habilitar Samba
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - smb
+    - nmb
+
+- name: Abrir Samba en el firewall
+  ansible.posix.firewalld:
+    service: samba
+    permanent: true
+    immediate: true
+    state: enabled

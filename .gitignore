@@ -1,0 +1,8 @@
+# Contraseña del vault (NUNCA subir)
+.vault_pass
+*.vault_pass
+
+# Temporales
+*.retry
+*.bak
+*.swp

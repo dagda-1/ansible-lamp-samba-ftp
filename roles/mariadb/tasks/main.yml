@@ -1,0 +1,32 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Instalar MariaDB y conector Python
+  community.general.zypper:
+    name:
+      - mariadb
+      - mariadb-client
+      - python313-PyMySQL
+    state: present
+
+- name: Arrancar y habilitar MariaDB
+  ansible.builtin.service:
+    name: mariadb
+    state: started
+    enabled: true
+
+- name: Comprobar si root ya tiene contraseña
+  ansible.builtin.command: mariadb -u root -p"{{ mariadb_root_password }}" -e "SELECT 1"
+  register: mariadb_root_check
+  failed_when: false
+  changed_when: false
+  no_log: true
+
+- name: Poner contraseña a root (solo la primera vez)
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ mariadb_root_password }}"
+    login_unix_socket: /run/mysql/mysql.sock
+    host_all: true
+    state: present
+  when: mariadb_root_check.rc != 0
+  no_log: true

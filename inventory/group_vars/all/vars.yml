@@ -1,0 +1,7 @@
+ansible_user: publica
+ansible_become: true
+ansible_become_password: "{{ vault_become_password }}"
+mariadb_root_password: "{{ vault_mariadb_root_password }}"
+samba_user: sambauser
+samba_password: "{{ vault_samba_password }}"
+samba_share_path: /srv/samba/compartido
