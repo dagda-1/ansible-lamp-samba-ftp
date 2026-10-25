@@ -1,0 +1,10 @@
+---
+- name: Reiniciar PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+
+- name: Reiniciar Apache
+  ansible.builtin.service:
+    name: apache2
+    state: restarted

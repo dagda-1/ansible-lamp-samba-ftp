@@ -1,0 +1,94 @@
+---
+# Rol postgresql: instala y configura PostgreSQL en openSUSE 16.0
+
+- name: Instalar PostgreSQL, librería PHP, conector Python y utilidades
+  community.general.zypper:
+    name:
+      - postgresql
+      - postgresql-server
+      - php8-pgsql
+      - python3-psycopg2
+      - openssl
+      - acl
+    state: present
+  notify: Reiniciar Apache
+
+- name: Arrancar y habilitar PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Generar certificado autofirmado para el cifrado SSL
+  ansible.builtin.command: >
+    openssl req -new -x509 -days 365 -nodes -text
+    -out {{ pg_data_dir }}/server.crt
+    -keyout {{ pg_data_dir }}/server.key
+    -subj "/CN={{ inventory_hostname }}"
+  args:
+    creates: "{{ pg_data_dir }}/server.key"
+
+- name: Dar permisos correctos al certificado y a la llave
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: postgres
+    group: postgres
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ pg_data_dir }}/server.crt", mode: "0644" }
+    - { path: "{{ pg_data_dir }}/server.key", mode: "0600" }
+
+- name: Escuchar en todas las interfaces (conexión remota)
+  ansible.builtin.lineinfile:
+    path: "{{ pg_data_dir }}/postgresql.conf"
+    regexp: '^#?listen_addresses'
+    line: "listen_addresses = '*'"
+  notify: Reiniciar PostgreSQL
+
+- name: Activar cifrado SSL
+  ansible.builtin.lineinfile:
+    path: "{{ pg_data_dir }}/postgresql.conf"
+    regexp: '^#?ssl\s*='
+    line: "ssl = on"
+  notify: Reiniciar PostgreSQL
+
+- name: Permitir conexiones remotas solo con SSL
+  ansible.builtin.lineinfile:
+    path: "{{ pg_data_dir }}/pg_hba.conf"
+    regexp: '^hostssl\s+all\s+all\s+0\.0\.0\.0/0'
+    line: "hostssl all all {{ pg_remote_network }} scram-sha-256"
+    insertafter: EOF
+  notify: Reiniciar PostgreSQL
+
+- name: Aplicar los cambios ahora (antes de crear usuarios)
+  ansible.builtin.meta: flush_handlers
+
+- name: Poner contraseña al usuario postgres
+  community.postgresql.postgresql_user:
+    name: postgres
+    password: "{{ postgres_password }}"
+  become: true
+  become_user: postgres
+  no_log: false
+
+- name: Crear el usuario nuevo
+  community.postgresql.postgresql_user:
+    name: "{{ pg_app_user }}"
+    password: "{{ pg_app_password }}"
+  become: true
+  become_user: postgres
+  no_log: true
+
+- name: Crear la base de datos del usuario nuevo
+  community.postgresql.postgresql_db:
+    name: "{{ pg_app_db }}"
+    owner: "{{ pg_app_user }}"
+  become: true
+  become_user: postgres
+
+- name: Abrir PostgreSQL en el firewall
+  ansible.posix.firewalld:
+    service: postgresql
+    permanent: true
+    immediate: true
+    state: enabled

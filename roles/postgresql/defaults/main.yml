@@ -1,0 +1,6 @@
+---
+# Valores por defecto del rol postgresql (se pueden sobreescribir en vars.yml)
+pg_data_dir: /var/lib/pgsql/data
+pg_remote_network: 0.0.0.0/0
+pg_app_user: appuser
+pg_app_db: appdb

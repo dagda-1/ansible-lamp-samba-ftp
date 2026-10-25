@@ -4,4 +4,4 @@
     - mariadb
     - lamp
     - samba
-    - ftp
+    - postgresql

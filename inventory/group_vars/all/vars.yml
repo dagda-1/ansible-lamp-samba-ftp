@@ -1,7 +1,13 @@
-ansible_user: publica
+ansible_user: root
 ansible_become: true
-ansible_become_password: "{{ vault_become_password }}"
+ansible_password: "{{ vault_become_password }}"
 mariadb_root_password: "{{ vault_mariadb_root_password }}"
 samba_user: sambauser
 samba_password: "{{ vault_samba_password }}"
 samba_share_path: /srv/samba/compartido
+
+# --- PostgreSQL (Tarea 5) ---
+postgres_password: "{{ vault_postgres_password }}"
+pg_app_user: appuser
+pg_app_password: "{{ vault_pg_app_password }}"
+pg_app_db: appdb
